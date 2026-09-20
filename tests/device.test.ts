@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { classifyDevice, PHONE_SHORT_MAX } from "../client/lib/device";
+import { readFileSync } from "node:fs";
+import { classifyDevice, PHONE_SHORT_MAX, WIDE_TABLET_DESKTOP_MIN } from "../client/lib/device";
+
+const html = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
+const css = readFileSync(new URL("../client/index.css", import.meta.url), "utf8");
 
 describe("device class", () => {
   it("treats a short-side under 600 as a phone", () => {
@@ -28,5 +32,20 @@ describe("device class", () => {
     expect(
       classifyDevice({ shortSide: 1080, coarse: false, fine: true, hover: true, touchPoints: 0 }),
     ).toBe("desktop");
+  });
+
+  it("boots the same classify rules in index.html before first paint", () => {
+    expect(html).toContain("data-device");
+    expect(html).toContain(`shortSide < ${PHONE_SHORT_MAX}`);
+    expect(html).toMatch(/maxTouchPoints/);
+    expect(html).toContain('(pointer: coarse)');
+    expect(html).toContain('(hover: hover)');
+  });
+
+  it("uses the desktop felt | hand split for wide classified tablets", () => {
+    expect(WIDE_TABLET_DESKTOP_MIN).toBe(1280);
+    expect(css).toContain(`@media (min-width: ${WIDE_TABLET_DESKTOP_MIN}px)`);
+    expect(css).toMatch(/html\[data-device="tablet"\] \.play-split/);
+    expect(css).toMatch(/"table hand"/);
   });
 });

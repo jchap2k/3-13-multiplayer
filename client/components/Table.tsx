@@ -362,14 +362,15 @@ export function Table({
         <div className="play-split">
         <div className="pane-table">
         <p className="pane-label">Table</p>
+        {state.phase === "playing" ? (
+          <div className="table-turn-strip">
+            <TurnStrip players={state.players} currentId={state.currentPlayerId} />
+          </div>
+        ) : null}
 
         <div className="felt-table table-surface mt-2 rounded-3xl p-3 sm:p-5">
-          <div className="table-surface-inner space-y-4">
-            {state.phase === "playing" ? (
-              <TurnStrip players={state.players} currentId={state.currentPlayerId} />
-            ) : null}
-
-            <div className="pile-row flex flex-wrap items-end justify-center gap-8 py-2">
+          <div className="table-surface-inner">
+            <div className="pile-row felt-piles flex flex-nowrap items-end justify-center gap-8 py-2">
               <div className="text-center">
                 <p className="mb-1 text-xs uppercase tracking-wider text-emerald-100/70">Stock</p>
                 {state.stockCount > 0 || (state.yourTurn && state.turnPhase === "draw" && state.discardCount > 1) ? (
