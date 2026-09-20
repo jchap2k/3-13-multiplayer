@@ -1,0 +1,15 @@
+Three Thirteen — Fly deploy pack
+Commit: 091bac6a7e7665a4081b22a513193481845276a9
+Branch: main
+Message: Add a Leave room control that works mid-game and while seated.
+
+Extract (creates /workspace/three-thirteen-app):
+  cd /workspace
+  tar -xzf three-thirteen-leave-room-main.tar.gz
+
+Deploy:
+  cd /workspace/three-thirteen-app
+  fly deploy --app three-thirteen --yes
+
+Live after deploy: https://three-thirteen.fly.dev
+Hard-refresh. HTML should not still be assets/index-BeRlNXsw.js

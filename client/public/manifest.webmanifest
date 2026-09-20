@@ -1,0 +1,25 @@
+{
+  "name": "Three Thirteen",
+  "short_name": "3-13",
+  "description": "Play Three Thirteen with family. No accounts. Share a room code.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#071610",
+  "theme_color": "#0b3a29",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

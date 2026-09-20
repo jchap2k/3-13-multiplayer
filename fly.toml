@@ -1,0 +1,31 @@
+app = "three-thirteen"
+primary_region = "iad"
+
+[env]
+  DONATE_URL = "https://buy.stripe.com/3cIcN44b1g2Tcdeh2AdQQ01"
+  DISCORD_VOICE_URL = "https://discord.gg/7cXfQJj9E"
+  SIT_STATS_DB = "/data/sit-stats.sqlite"
+
+[mounts]
+  source = "sit_stats"
+  destination = "/data"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.http_options]
+    idle_timeout = 300
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  path = "/health"
+  timeout = "5s"

@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+*.log
+.env
+.vite
+agent-tools
+three-thirteen-playtest.tar.gz
+data/sit-stats.json
+data/sit-stats.sqlite
+data/sit-stats.sqlite-journal

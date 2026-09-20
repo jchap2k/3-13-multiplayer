@@ -1,0 +1,31 @@
+Three Thirteen — run on the shared playtest machine
+===================================================
+
+  npm install
+  npm run dev
+
+Then open http://127.0.0.1:43133
+Join a room: http://127.0.0.1:43133/?room=KITE-7  (WORD-NN — ?room=PLAY-A stays on the lobby with an error; it does not open another table)
+
+PORT is 43133 (override with PORT=... if needed).
+Production-style: npm run build && npm start
+
+Bots: type a name, Sit, tap Add bot one or more times. The first seater is the host and starts the game.
+Deadwood aces default to 15; lobby can switch to 1. Locked at Start.
+Caught wilds = face value is off by default (wilds 15 / jokers 20). On: printed rank, jokers 0. Locked at Start.
+Idle auto-move is off by default. Check it in the lobby if you want a 3 minute (180s) force-play.
+Empty stock: shuffle the discard except the upcard. Only the upcard left → take discard. Both empty → score deadwood.
+Round-end scores fill the table (totals + per-round card) and wait 12s before the next deal.
+Match-end standings have Back to lobby (anyone seated; same room).
+Leave room (table chrome, and lobby when seated) stands you up and opens a fresh create-or-join lobby. Next human becomes host. Voice says Leave voice.
+Host can End game mid-match (confirm) to return the same room to the lobby.
+Layout: html data-device is phone (short screen side < 600px), tablet (600+ and touch/coarse, including iPad), or desktop. Tablets/desktops letterbox the felt.
+No second human required. Bots never discard a wild while a natural exists.
+Text chat is live. Chat overlay while playing starts on for new browsers (Accessibility / Talk) — two lines sit under the turn strip; uncheck to hide. A saved off stays off. Voice chat lives on Discord for now (Join Discord voice).
+
+Restarting npm run dev wipes in-memory rooms. Reconnect restores a live seat;
+a wiped code shows a “server restarted / room lost” banner.
+
+Public HTTPS: https://three-thirteen.fly.dev  (health: /health)
+Lobby has Support hosting (Stripe Payment Link; override with DONATE_URL).
+Accessibility (lobby + table icon): bigger pips, turn chime, and chat overlay default on for new browsers; double-tap / long-press stay off until checked. Saved prefs are not overwritten.
