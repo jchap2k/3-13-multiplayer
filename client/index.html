@@ -2,6 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      /* Keep in sync with client/lib/device.ts classifyDevice — first paint on Fly. */
+      (function () {
+        try {
+          var shortSide = Math.min(screen.width, screen.height);
+          var coarse = window.matchMedia("(pointer: coarse)").matches;
+          var fine = window.matchMedia("(pointer: fine)").matches;
+          var hover = window.matchMedia("(hover: hover)").matches;
+          var touch = (navigator.maxTouchPoints || 0) > 0 || coarse;
+          var device = shortSide < 600 ? "phone" : touch ? "tablet" : hover && fine ? "desktop" : "tablet";
+          var orientation = window.matchMedia("(orientation: landscape)").matches
+            ? "landscape"
+            : "portrait";
+          document.documentElement.setAttribute("data-device", device);
+          document.documentElement.setAttribute("data-orientation", orientation);
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b3a29" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

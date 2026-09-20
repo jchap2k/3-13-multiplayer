@@ -53,6 +53,17 @@ describe("mid-hand table piles stay reserved on tablet/desktop", () => {
     const frame = ruleBlock('html[data-device="tablet"] .table-frame,');
     expect(frame).toMatch(/overflow-y:\s*auto/);
     expect(frame).not.toMatch(/overflow:\s*hidden/);
+
+    const chrome = ruleBlock('html[data-device="tablet"] .table-chrome,');
+    expect(chrome).toMatch(/max-height:\s*min\(32dvh, 18rem\)/);
+    expect(chrome).toMatch(/overflow:\s*auto/);
+  });
+
+  it("gives felt piles a reserved box that cannot collapse", () => {
+    const piles = ruleBlock(".felt-piles");
+    expect(piles).toMatch(/min-height:\s*7\.5rem/);
+    expect(piles).toMatch(/min-width:\s*min\(100%, 9\.5rem\)/);
+    expect(piles).toMatch(/flex:\s*0 0 auto/);
   });
 
   it("keeps the phone column scrollable and unclipped", () => {

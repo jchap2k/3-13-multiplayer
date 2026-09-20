@@ -4,6 +4,13 @@ export type DeviceOrientation = "portrait" | "landscape";
 /** Short side below this (CSS px, `screen`) is a phone. iPhone 15 Pro Max ≈ 430. */
 export const PHONE_SHORT_MAX = 600;
 
+/**
+ * Viewport width at which a classified tablet (touch PC, large iPad) uses the
+ * desktop felt | hand split so stock/discard stay in a reserved left TABLE.
+ * Keep the CSS `@media (min-width: 1280px)` in index.css in sync.
+ */
+export const WIDE_TABLET_DESKTOP_MIN = 1280;
+
 export function classifyDevice(input: {
   shortSide: number;
   coarse: boolean;
@@ -42,7 +49,8 @@ export function applyDeviceDataset(target: HTMLElement = document.documentElemen
   target.dataset.orientation = orientation;
 }
 
-/** Sets `data-device` and `data-orientation` on `<html>` and keeps them current. */
+/** Sets `data-device` and `data-orientation` on `<html>` and keeps them current.
+ *  index.html also boots these attributes inline so Fly's first paint is correct. */
 export function startDeviceWatch() {
   applyDeviceDataset();
   const refresh = () => applyDeviceDataset();
