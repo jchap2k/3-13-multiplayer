@@ -40,8 +40,13 @@ describe("mid-hand table piles stay reserved on tablet/desktop", () => {
     expect(desktop).not.toMatch(/grid-template-rows:\s*minmax\(0,\s*1fr\)/);
 
     const tablet = ruleBlock('html[data-device="tablet"] .play-split');
-    expect(tablet).toMatch(/minmax\(13\.25rem, auto\)/);
+    expect(tablet).toMatch(/minmax\(12\.75rem, min\(16rem, 34dvh\)\)/);
+    expect(tablet).toMatch(/minmax\(12rem, 1fr\)/);
+    expect(tablet).toMatch(/min-height:\s*26rem/);
     expect(tablet).toMatch(/"table scores"/);
+
+    const cards = ruleBlock('html[data-device="tablet"] .hand-cards,');
+    expect(cards).toMatch(/min-height:\s*7\.25rem/);
   });
 
   it("lets a tall chrome column scroll instead of clipping piles away", () => {
