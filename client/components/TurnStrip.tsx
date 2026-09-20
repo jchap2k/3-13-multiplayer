@@ -54,7 +54,7 @@ function Chip({
             {connectionNote(player)}
             <BotPlayBadge player={player} />
           </p>
-          <p className="truncate text-[11px] text-emerald-100/60">{player.cardCount} cards</p>
+          <p className="table-turn-count truncate text-[11px] text-emerald-100/60">{player.cardCount} cards</p>
         </div>
       </div>
     </div>
@@ -70,7 +70,7 @@ export function TurnStrip({
 }) {
   const ring = turnNeighbors(players, currentId);
   return (
-    <div className="mt-3" data-turn-strip>
+    <div className="table-turn-strip-inner mt-3" data-turn-strip>
       <div className="flex items-stretch gap-1.5 sm:gap-2">
         <Chip player={ring.previous} label="Previous" />
         <Chip player={ring.current} label="Current" current />
