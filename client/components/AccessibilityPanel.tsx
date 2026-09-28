@@ -13,7 +13,7 @@ export function AccessibilityPanel({ compact = false }: { compact?: boolean }) {
       </h2>
       <p className="mt-1 text-xs text-emerald-100/55">
         Saved on this browser. Change anytime — including mid-hand. New browsers start with bigger
-        ranks, wild marks, the turn chime, and chat overlay on.
+        ranks, the turn chime, and chat overlay on. Wild marks start off.
       </p>
       <div className="mt-3 space-y-3 text-emerald-50">
         <Checkbox
@@ -22,7 +22,7 @@ export function AccessibilityPanel({ compact = false }: { compact?: boolean }) {
           onChange={(e) => patch({ largePips: e.currentTarget.checked })}
         />
         <Checkbox
-          label="Mark wilds on cards — yellow ring and WILD badge on this-round wilds and jokers (on by default)"
+          label="Mark wilds on cards — yellow ring and WILD badge on this-round wilds and jokers (off by default)"
           checked={prefs.markWilds}
           onChange={(e) => patch({ markWilds: e.currentTarget.checked })}
         />
@@ -59,7 +59,8 @@ export function AccessibilityPanel({ compact = false }: { compact?: boolean }) {
         Discard with the Discard button, or (if on) double-tap ({DOUBLE_TAP_MS}ms) / long-press.
         Any legal discard that leaves a fully melded hand{" "}
         <span className="text-amber-100">goes out automatically</span>. Everyone sees a big “went
-        out” flash.
+        out” panel on this page, titled with their name, showing that hand. <span className="text-amber-100">Close</span>{" "}
+        dismisses it. <span className="text-amber-100">Show cards</span> on the scoreboard opens the same panel again.
       </p>
     </section>
   );

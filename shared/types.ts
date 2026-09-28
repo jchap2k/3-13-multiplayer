@@ -72,6 +72,8 @@ export interface ClientView {
   goOutCardIds: string[];
   wentOutId: string | null;
   wentOutName: string | null;
+  /** Melds the go-out player kept. Hidden in the UI until that viewer taps Show cards. */
+  wentOutMelds: Card[][] | null;
   lastTurnNames: string[];
   message: string;
   joinPath: string;

@@ -1032,6 +1032,21 @@ export function playBotTurn(room: Room, seat: Seat) {
   }
 }
 
+/** Cards the go-out player kept, grouped as melds. Null until someone goes out. */
+export function publicWentOutMelds(room: Room): Card[][] | null {
+  if (!room.wentOutId) return null;
+  if (room.phase === "round_end" || room.phase === "match_end") {
+    const row = room.revealed?.find((item) => item.playerId === room.wentOutId);
+    return row && row.melds.length > 0 ? row.melds : null;
+  }
+  if (room.phase !== "playing") return null;
+  const seat = seatById(room, room.wentOutId);
+  if (!seat || seat.hand.length === 0) return null;
+  const wild = wildRankForRound(room.round);
+  const arranged = bestArrangement(seat.hand, wild, room.acePoints, room.wildFaceValue);
+  return arranged.melds.length > 0 ? arranged.melds : null;
+}
+
 export function toClientView(room: Room, youId: string): ClientView {
   const you = seatById(room, youId);
   const wild = wildRankForRound(room.round);
@@ -1087,6 +1102,7 @@ export function toClientView(room: Room, youId: string): ClientView {
     goOutCardIds: you && yourTurn && room.turnPhase === "discard" ? goOutCardIds(you.hand, wild, room.acePoints, room.wildFaceValue) : [],
     wentOutId: room.wentOutId,
     wentOutName: room.wentOutId ? seatById(room, room.wentOutId)?.name ?? null : null,
+    wentOutMelds: publicWentOutMelds(room),
     lastTurnNames: room.lastTurnQueue
       .map((id) => seatById(room, id)?.name)
       .filter((name): name is string => Boolean(name)),

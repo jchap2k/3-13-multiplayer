@@ -16,6 +16,7 @@ import { useA11y } from "../lib/A11yContext";
 import { SeatAvatar } from "./SeatAvatar";
 import { SitName, playerGold } from "./SitName";
 import { DonateLink } from "./DonateLink";
+import { ShowWentOutCardsButton } from "./WentOutHand";
 import { Button } from "./ui/button";
 
 function useSecondsLeft(at: number | null): number | null {
@@ -127,7 +128,7 @@ function RoundTable({
   );
 }
 
-function LiveScores({ state }: { state: ClientView }) {
+function LiveScores({ state, onShowWentOutCards }: { state: ClientView; onShowWentOutCards: () => void }) {
   const [open, setOpen] = useState(false);
   const rounds = scoredRoundCount(state.players, state.round);
   return (
@@ -158,6 +159,11 @@ function LiveScores({ state }: { state: ClientView }) {
           </Button>
         ) : null}
       </div>
+      {state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+        <div className="mt-3">
+          <ShowWentOutCardsButton onShow={onShowWentOutCards} />
+        </div>
+      ) : null}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {state.players.map((player) => {
           const last = lastRoundPoints(player);
@@ -210,10 +216,12 @@ function ScoreRecap({
   state,
   onNextRound,
   onRematch,
+  onShowWentOutCards,
 }: {
   state: ClientView;
   onNextRound: () => void;
   onRematch: () => void;
+  onShowWentOutCards: () => void;
 }) {
   const matchOver = state.phase === "match_end";
   const seconds = useSecondsLeft(matchOver ? null : state.autoNextAt);
@@ -336,6 +344,11 @@ function ScoreRecap({
                 <div className="mt-2">
                   <DeadwoodLine row={row} wildRank={state.wildRank} />
                 </div>
+                {state.wentOutId === player.id && state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+                  <div className="mt-2">
+                    <ShowWentOutCardsButton onShow={onShowWentOutCards} />
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -380,13 +393,22 @@ export function Scoreboard({
   state,
   onNextRound,
   onRematch,
+  onShowWentOutCards,
 }: {
   state: ClientView;
   onNextRound: () => void;
   onRematch: () => void;
+  onShowWentOutCards: () => void;
 }) {
   if (state.phase === "round_end" || state.phase === "match_end") {
-    return <ScoreRecap state={state} onNextRound={onNextRound} onRematch={onRematch} />;
+    return (
+      <ScoreRecap
+        state={state}
+        onNextRound={onNextRound}
+        onRematch={onRematch}
+        onShowWentOutCards={onShowWentOutCards}
+      />
+    );
   }
-  return <LiveScores state={state} />;
+  return <LiveScores state={state} onShowWentOutCards={onShowWentOutCards} />;
 }

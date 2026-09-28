@@ -29,6 +29,7 @@ import { LearningToggle } from "./LearningToggle";
 import { useLearning } from "../lib/LearningContext";
 import { CoachOverlay } from "./CoachOverlay";
 import { LeaveRoomButton } from "./LeaveRoomButton";
+import { ShowWentOutCardsButton, WentOutCardsPanel } from "./WentOutHand";
 import { Button } from "./ui/button";
 
 function remainingSeconds(turnEndsAt: number | null): number | null {
@@ -87,12 +88,14 @@ export function Table({
   const [wildToast, setWildToast] = useState(false);
   const [idleToast, setIdleToast] = useState<string | null>(null);
   const [wentOutFlash, setWentOutFlash] = useState<string | null>(null);
+  const [wentOutCardsOpen, setWentOutCardsOpen] = useState(false);
   const { prefs } = useA11y();
   const { learning, setLearning } = useLearning();
   const lastIdleMessage = useRef<string | null>(null);
   const previousPlayerId = useRef<string | null>(null);
   const wasMyTurn = useRef<boolean | null>(null);
   const lastWentOutKey = useRef<string | null>(null);
+  const wentOutPinned = useRef(false);
   const discardRef = useRef<HTMLButtonElement>(null);
   const canGoOut = Boolean(selected && state.goOutCardIds.includes(selected));
   const goOutAvailable = state.goOutCardIds.length > 0;
@@ -157,10 +160,20 @@ export function Table({
     const key = wentOutFlashKey(state.roomCode, state.round, state.wentOutId);
     if (!key || key === lastWentOutKey.current) return;
     lastWentOutKey.current = key;
+    const showCards = Boolean(state.wentOutMelds && state.wentOutMelds.length > 0);
+    wentOutPinned.current = showCards;
     setWentOutFlash(state.wentOutName ?? "Someone");
-    const timer = window.setTimeout(() => setWentOutFlash(null), WENT_OUT_FLASH_MS);
+    if (showCards) return;
+    const timer = window.setTimeout(() => {
+      if (wentOutPinned.current) return;
+      setWentOutFlash(null);
+    }, WENT_OUT_FLASH_MS);
     return () => window.clearTimeout(timer);
-  }, [state.roomCode, state.round, state.wentOutId, state.wentOutName]);
+  }, [state.roomCode, state.round, state.wentOutId, state.wentOutName, state.wentOutMelds]);
+
+  useEffect(() => {
+    setWentOutCardsOpen(false);
+  }, [state.roomCode, state.round, state.wentOutId]);
 
   useEffect(() => {
     const standIn = isStandInToast(state.message);
@@ -331,6 +344,7 @@ export function Table({
             dealCount={state.dealCount}
             jokers={state.jokers}
             suddenDeath={state.wagerSuddenDeath}
+            markWilds={prefs.markWilds}
           />
           <CoachOverlay
             state={state}
@@ -356,7 +370,15 @@ export function Table({
 
         {state.phase === "round_end" || state.phase === "match_end" ? (
           <div className="score-recap-pane mt-3">
-            <Scoreboard state={state} onNextRound={onNextRound} onRematch={onRematch} />
+            <Scoreboard
+              state={state}
+              onNextRound={onNextRound}
+              onRematch={onRematch}
+              onShowWentOutCards={() => {
+                wentOutPinned.current = true;
+                setWentOutCardsOpen(true);
+              }}
+            />
           </div>
         ) : (
         <div className="play-split">
@@ -525,7 +547,15 @@ export function Table({
         </div>
           {state.phase === "playing" ? (
             <div className="live-scores-playing">
-              <Scoreboard state={state} onNextRound={onNextRound} onRematch={onRematch} />
+              <Scoreboard
+                state={state}
+                onNextRound={onNextRound}
+                onRematch={onRematch}
+                onShowWentOutCards={() => {
+                  wentOutPinned.current = true;
+                  setWentOutCardsOpen(true);
+                }}
+              />
             </div>
           ) : null}
         </div>
@@ -560,23 +590,40 @@ export function Table({
         suddenDeath={state.wagerSuddenDeath}
         onDismiss={() => setWildToast(false)}
       />
-      {wentOutFlash ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]"
-          onClick={() => setWentOutFlash(null)}
-          role="status"
-          aria-live="assertive"
-        >
-          <div className="w-full max-w-lg rounded-3xl border border-amber-200/40 bg-[#10261c] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-200/80">
-              Gone out
+      {wentOutFlash && !(state.wentOutMelds && state.wentOutMelds.length > 0) ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="status">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+            aria-label="Dismiss went out"
+            onClick={() => setWentOutFlash(null)}
+          />
+          <div
+            className="relative z-10 w-full max-w-lg rounded-3xl border border-amber-200/40 bg-[#10261c] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+            onPointerDown={() => {
+              wentOutPinned.current = true;
+            }}
+          >
+            <p
+              className="font-display text-4xl font-extrabold leading-tight text-amber-100 sm:text-5xl"
+              aria-live="assertive"
+            >
+              {wentOutFlash} went out:
             </p>
-            <p className="font-display mt-3 text-4xl font-extrabold leading-tight text-amber-100 sm:text-5xl">
-              {wentOutFlash} went out!
-            </p>
-            <p className="mt-3 text-sm text-emerald-100/70">Last turns — tap to continue</p>
+            <p className="mt-3 text-sm text-emerald-100/70">Last turns — tap outside to continue</p>
           </div>
         </div>
+      ) : null}
+      {(wentOutFlash || wentOutCardsOpen) && state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+        <WentOutCardsPanel
+          name={state.wentOutName ?? wentOutFlash ?? "Someone"}
+          melds={state.wentOutMelds}
+          wildRank={state.wildRank}
+          onClose={() => {
+            setWentOutFlash(null);
+            setWentOutCardsOpen(false);
+          }}
+        />
       ) : null}
       {a11yOpen ? (
         <div
