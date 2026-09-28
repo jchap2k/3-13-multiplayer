@@ -17,10 +17,10 @@ function c(id: string, rank: number, suit: Card["suit"]): Card {
 }
 
 describe("a11y prefs", () => {
-  it("defaults bigger pips, wild marks, turn sound, and chat overlay on for first-time browsers", () => {
+  it("defaults bigger pips, turn sound, and chat overlay on; wild marks off until turned on", () => {
     expect(DEFAULT_A11Y).toEqual({
       largePips: true,
-      markWilds: true,
+      markWilds: false,
       doubleDiscard: false,
       longDiscard: false,
       turnSound: true,
@@ -41,6 +41,8 @@ describe("a11y prefs", () => {
       ...DEFAULT_A11Y,
       markWilds: false,
     });
+    expect(loadA11y(JSON.stringify({ markWilds: true })).markWilds).toBe(true);
+    expect(loadA11y(JSON.stringify({ largePips: false })).markWilds).toBe(false);
     expect(LONG_PRESS_MS).toBe(550);
     expect(DOUBLE_TAP_MS).toBe(400);
   });

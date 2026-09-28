@@ -15,7 +15,7 @@ export interface A11yPrefs {
 
 export const DEFAULT_A11Y: A11yPrefs = {
   largePips: true,
-  markWilds: true,
+  markWilds: false,
   doubleDiscard: false,
   longDiscard: false,
   turnSound: true,

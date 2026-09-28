@@ -16,6 +16,7 @@ import { useA11y } from "../lib/A11yContext";
 import { SeatAvatar } from "./SeatAvatar";
 import { SitName, playerGold } from "./SitName";
 import { DonateLink } from "./DonateLink";
+import { WentOutHandReveal } from "./WentOutHand";
 import { Button } from "./ui/button";
 
 function useSecondsLeft(at: number | null): number | null {
@@ -158,6 +159,16 @@ function LiveScores({ state }: { state: ClientView }) {
           </Button>
         ) : null}
       </div>
+      {state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+        <div className="mt-3">
+          <WentOutHandReveal
+            key={`${state.roomCode}:${state.round}:${state.wentOutId}`}
+            name={state.wentOutName ?? "Someone"}
+            melds={state.wentOutMelds}
+            wildRank={state.wildRank}
+          />
+        </div>
+      ) : null}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {state.players.map((player) => {
           const last = lastRoundPoints(player);
@@ -336,6 +347,16 @@ function ScoreRecap({
                 <div className="mt-2">
                   <DeadwoodLine row={row} wildRank={state.wildRank} />
                 </div>
+                {state.wentOutId === player.id && state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+                  <div className="mt-2">
+                    <WentOutHandReveal
+                      key={`${state.roomCode}:${state.round}:${state.wentOutId}`}
+                      name={player.name}
+                      melds={state.wentOutMelds}
+                      wildRank={state.wildRank}
+                    />
+                  </div>
+                ) : null}
               </div>
             );
           })}

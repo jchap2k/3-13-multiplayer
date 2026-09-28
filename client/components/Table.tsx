@@ -29,6 +29,7 @@ import { LearningToggle } from "./LearningToggle";
 import { useLearning } from "../lib/LearningContext";
 import { CoachOverlay } from "./CoachOverlay";
 import { LeaveRoomButton } from "./LeaveRoomButton";
+import { WentOutHandReveal } from "./WentOutHand";
 import { Button } from "./ui/button";
 
 function remainingSeconds(turnEndsAt: number | null): number | null {
@@ -93,6 +94,7 @@ export function Table({
   const previousPlayerId = useRef<string | null>(null);
   const wasMyTurn = useRef<boolean | null>(null);
   const lastWentOutKey = useRef<string | null>(null);
+  const wentOutPinned = useRef(false);
   const discardRef = useRef<HTMLButtonElement>(null);
   const canGoOut = Boolean(selected && state.goOutCardIds.includes(selected));
   const goOutAvailable = state.goOutCardIds.length > 0;
@@ -157,8 +159,12 @@ export function Table({
     const key = wentOutFlashKey(state.roomCode, state.round, state.wentOutId);
     if (!key || key === lastWentOutKey.current) return;
     lastWentOutKey.current = key;
+    wentOutPinned.current = false;
     setWentOutFlash(state.wentOutName ?? "Someone");
-    const timer = window.setTimeout(() => setWentOutFlash(null), WENT_OUT_FLASH_MS);
+    const timer = window.setTimeout(() => {
+      if (wentOutPinned.current) return;
+      setWentOutFlash(null);
+    }, WENT_OUT_FLASH_MS);
     return () => window.clearTimeout(timer);
   }, [state.roomCode, state.round, state.wentOutId, state.wentOutName]);
 
@@ -331,6 +337,7 @@ export function Table({
             dealCount={state.dealCount}
             jokers={state.jokers}
             suddenDeath={state.wagerSuddenDeath}
+            markWilds={prefs.markWilds}
           />
           <CoachOverlay
             state={state}
@@ -561,20 +568,42 @@ export function Table({
         onDismiss={() => setWildToast(false)}
       />
       {wentOutFlash ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]"
-          onClick={() => setWentOutFlash(null)}
-          role="status"
-          aria-live="assertive"
-        >
-          <div className="w-full max-w-lg rounded-3xl border border-amber-200/40 bg-[#10261c] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="status">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+            aria-label="Dismiss went out"
+            onClick={() => setWentOutFlash(null)}
+          />
+          <div
+            className="relative z-10 w-full max-w-lg rounded-3xl border border-amber-200/40 bg-[#10261c] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+            onPointerDown={() => {
+              wentOutPinned.current = true;
+            }}
+          >
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-200/80">
               Gone out
             </p>
-            <p className="font-display mt-3 text-4xl font-extrabold leading-tight text-amber-100 sm:text-5xl">
+            <p
+              className="font-display mt-3 text-4xl font-extrabold leading-tight text-amber-100 sm:text-5xl"
+              aria-live="assertive"
+            >
               {wentOutFlash} went out!
             </p>
-            <p className="mt-3 text-sm text-emerald-100/70">Last turns — tap to continue</p>
+            <p className="mt-3 text-sm text-emerald-100/70">Last turns — tap outside to continue</p>
+            {state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+              <div className="mt-5 flex justify-center">
+                <WentOutHandReveal
+                  name={wentOutFlash}
+                  melds={state.wentOutMelds}
+                  wildRank={state.wildRank}
+                  layout="cards"
+                  onOpenChange={(open) => {
+                    if (open) wentOutPinned.current = true;
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

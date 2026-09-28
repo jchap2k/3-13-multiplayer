@@ -6,12 +6,14 @@ export function WildBanner({
   dealCount,
   jokers,
   suddenDeath = false,
+  markWilds = false,
 }: {
   round: number;
   wildRank: number;
   dealCount: number;
   jokers: boolean;
   suddenDeath?: boolean;
+  markWilds?: boolean;
 }) {
   return (
     <div className="wild-banner mt-3 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-amber-500/25 via-amber-300/10 to-emerald-950/50 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
@@ -23,7 +25,9 @@ export function WildBanner({
       <p className="mt-0.5 text-sm text-amber-100/80">
         Deal {dealCount}
         {jokers ? " · jokers stay wild too" : ""}
-        {" · yellow ring = wild (Accessibility → Mark wilds)"}
+        {markWilds
+          ? " · yellow ring = wild"
+          : " · Mark wilds in Accessibility to highlight them"}
       </p>
     </div>
   );
