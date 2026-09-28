@@ -28,8 +28,11 @@ export function ShowWentOutCardsButton({ onShow }: { onShow: () => void }) {
   );
 }
 
-/** Popup of the hand someone went out with. Sits over the table and does not reflow it. */
-export function WentOutCardsModal({
+/**
+ * In-page panel for the hand someone went out with. Fixed over the table
+ * (not a browser window) so the layout underneath does not move.
+ */
+export function WentOutCardsPanel({
   name,
   melds,
   wildRank,
@@ -68,12 +71,10 @@ export function WentOutCardsModal({
         className="relative z-10 flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-amber-200/40 bg-[#10261c] text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
       >
         <div className="overflow-y-auto px-5 pt-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-200/80">
-            Went out
+          <p id="went-out-cards-title" className="font-display text-3xl font-extrabold leading-tight text-amber-100 sm:text-4xl">
+            {name} went out:
           </p>
-          <p id="went-out-cards-title" className="font-display mt-2 text-2xl font-extrabold text-amber-100 sm:text-3xl">
-            {name}&apos;s cards
-          </p>
+          <p className="mt-2 text-sm text-emerald-100/70">Last turns continue under this panel.</p>
           <div className="mt-4 flex flex-col items-center gap-2 pb-4">
             {melds.map((meld, index) => (
               <div key={`${meld[0]?.id ?? "meld"}-${index}`} className="flex flex-wrap justify-center gap-1">

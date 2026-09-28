@@ -59,8 +59,8 @@ export function AccessibilityPanel({ compact = false }: { compact?: boolean }) {
         Discard with the Discard button, or (if on) double-tap ({DOUBLE_TAP_MS}ms) / long-press.
         Any legal discard that leaves a fully melded hand{" "}
         <span className="text-amber-100">goes out automatically</span>. Everyone sees a big “went
-        out” flash, with an optional <span className="text-amber-100">Show cards</span> popup for
-        that hand.
+        out” panel on this page, titled with their name, showing that hand. <span className="text-amber-100">Close</span>{" "}
+        dismisses it. <span className="text-amber-100">Show cards</span> on the scoreboard opens the same panel again.
       </p>
     </section>
   );

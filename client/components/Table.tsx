@@ -29,7 +29,7 @@ import { LearningToggle } from "./LearningToggle";
 import { useLearning } from "../lib/LearningContext";
 import { CoachOverlay } from "./CoachOverlay";
 import { LeaveRoomButton } from "./LeaveRoomButton";
-import { ShowWentOutCardsButton, WentOutCardsModal } from "./WentOutHand";
+import { ShowWentOutCardsButton, WentOutCardsPanel } from "./WentOutHand";
 import { Button } from "./ui/button";
 
 function remainingSeconds(turnEndsAt: number | null): number | null {
@@ -160,14 +160,16 @@ export function Table({
     const key = wentOutFlashKey(state.roomCode, state.round, state.wentOutId);
     if (!key || key === lastWentOutKey.current) return;
     lastWentOutKey.current = key;
-    wentOutPinned.current = false;
+    const showCards = Boolean(state.wentOutMelds && state.wentOutMelds.length > 0);
+    wentOutPinned.current = showCards;
     setWentOutFlash(state.wentOutName ?? "Someone");
+    if (showCards) return;
     const timer = window.setTimeout(() => {
       if (wentOutPinned.current) return;
       setWentOutFlash(null);
     }, WENT_OUT_FLASH_MS);
     return () => window.clearTimeout(timer);
-  }, [state.roomCode, state.round, state.wentOutId, state.wentOutName]);
+  }, [state.roomCode, state.round, state.wentOutId, state.wentOutName, state.wentOutMelds]);
 
   useEffect(() => {
     setWentOutCardsOpen(false);
@@ -588,7 +590,7 @@ export function Table({
         suddenDeath={state.wagerSuddenDeath}
         onDismiss={() => setWildToast(false)}
       />
-      {wentOutFlash ? (
+      {wentOutFlash && !(state.wentOutMelds && state.wentOutMelds.length > 0) ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="status">
           <button
             type="button"
@@ -602,35 +604,25 @@ export function Table({
               wentOutPinned.current = true;
             }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-200/80">
-              Gone out
-            </p>
             <p
-              className="font-display mt-3 text-4xl font-extrabold leading-tight text-amber-100 sm:text-5xl"
+              className="font-display text-4xl font-extrabold leading-tight text-amber-100 sm:text-5xl"
               aria-live="assertive"
             >
-              {wentOutFlash} went out!
+              {wentOutFlash} went out:
             </p>
             <p className="mt-3 text-sm text-emerald-100/70">Last turns — tap outside to continue</p>
-            {state.wentOutMelds && state.wentOutMelds.length > 0 ? (
-              <div className="mt-5 flex justify-center">
-                <ShowWentOutCardsButton
-                  onShow={() => {
-                    wentOutPinned.current = true;
-                    setWentOutCardsOpen(true);
-                  }}
-                />
-              </div>
-            ) : null}
           </div>
         </div>
       ) : null}
-      {wentOutCardsOpen && state.wentOutMelds && state.wentOutMelds.length > 0 ? (
-        <WentOutCardsModal
+      {(wentOutFlash || wentOutCardsOpen) && state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+        <WentOutCardsPanel
           name={state.wentOutName ?? wentOutFlash ?? "Someone"}
           melds={state.wentOutMelds}
           wildRank={state.wildRank}
-          onClose={() => setWentOutCardsOpen(false)}
+          onClose={() => {
+            setWentOutFlash(null);
+            setWentOutCardsOpen(false);
+          }}
         />
       ) : null}
       {a11yOpen ? (
