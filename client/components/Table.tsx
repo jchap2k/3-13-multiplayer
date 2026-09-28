@@ -29,7 +29,7 @@ import { LearningToggle } from "./LearningToggle";
 import { useLearning } from "../lib/LearningContext";
 import { CoachOverlay } from "./CoachOverlay";
 import { LeaveRoomButton } from "./LeaveRoomButton";
-import { WentOutHandReveal } from "./WentOutHand";
+import { ShowWentOutCardsButton, WentOutCardsModal } from "./WentOutHand";
 import { Button } from "./ui/button";
 
 function remainingSeconds(turnEndsAt: number | null): number | null {
@@ -88,6 +88,7 @@ export function Table({
   const [wildToast, setWildToast] = useState(false);
   const [idleToast, setIdleToast] = useState<string | null>(null);
   const [wentOutFlash, setWentOutFlash] = useState<string | null>(null);
+  const [wentOutCardsOpen, setWentOutCardsOpen] = useState(false);
   const { prefs } = useA11y();
   const { learning, setLearning } = useLearning();
   const lastIdleMessage = useRef<string | null>(null);
@@ -167,6 +168,10 @@ export function Table({
     }, WENT_OUT_FLASH_MS);
     return () => window.clearTimeout(timer);
   }, [state.roomCode, state.round, state.wentOutId, state.wentOutName]);
+
+  useEffect(() => {
+    setWentOutCardsOpen(false);
+  }, [state.roomCode, state.round, state.wentOutId]);
 
   useEffect(() => {
     const standIn = isStandInToast(state.message);
@@ -363,7 +368,15 @@ export function Table({
 
         {state.phase === "round_end" || state.phase === "match_end" ? (
           <div className="score-recap-pane mt-3">
-            <Scoreboard state={state} onNextRound={onNextRound} onRematch={onRematch} />
+            <Scoreboard
+              state={state}
+              onNextRound={onNextRound}
+              onRematch={onRematch}
+              onShowWentOutCards={() => {
+                wentOutPinned.current = true;
+                setWentOutCardsOpen(true);
+              }}
+            />
           </div>
         ) : (
         <div className="play-split">
@@ -532,7 +545,15 @@ export function Table({
         </div>
           {state.phase === "playing" ? (
             <div className="live-scores-playing">
-              <Scoreboard state={state} onNextRound={onNextRound} onRematch={onRematch} />
+              <Scoreboard
+                state={state}
+                onNextRound={onNextRound}
+                onRematch={onRematch}
+                onShowWentOutCards={() => {
+                  wentOutPinned.current = true;
+                  setWentOutCardsOpen(true);
+                }}
+              />
             </div>
           ) : null}
         </div>
@@ -593,19 +614,24 @@ export function Table({
             <p className="mt-3 text-sm text-emerald-100/70">Last turns — tap outside to continue</p>
             {state.wentOutMelds && state.wentOutMelds.length > 0 ? (
               <div className="mt-5 flex justify-center">
-                <WentOutHandReveal
-                  name={wentOutFlash}
-                  melds={state.wentOutMelds}
-                  wildRank={state.wildRank}
-                  layout="cards"
-                  onOpenChange={(open) => {
-                    if (open) wentOutPinned.current = true;
+                <ShowWentOutCardsButton
+                  onShow={() => {
+                    wentOutPinned.current = true;
+                    setWentOutCardsOpen(true);
                   }}
                 />
               </div>
             ) : null}
           </div>
         </div>
+      ) : null}
+      {wentOutCardsOpen && state.wentOutMelds && state.wentOutMelds.length > 0 ? (
+        <WentOutCardsModal
+          name={state.wentOutName ?? wentOutFlash ?? "Someone"}
+          melds={state.wentOutMelds}
+          wildRank={state.wildRank}
+          onClose={() => setWentOutCardsOpen(false)}
+        />
       ) : null}
       {a11yOpen ? (
         <div

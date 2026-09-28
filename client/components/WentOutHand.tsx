@@ -1,87 +1,89 @@
-import { isRed, isWild, rankLabel, SUIT_GLYPH } from "@shared/cards";
 import type { Card } from "@shared/types";
-import { useId, useState } from "react";
-import { useA11y } from "../lib/A11yContext";
-import { cn } from "../lib/utils";
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { PlayingCard } from "./PlayingCard";
 import { Button } from "./ui/button";
 
-function CardChip({ card, wildRank }: { card: Card; wildRank: number }) {
-  const { prefs } = useA11y();
-  const red = isRed(card);
-  const markWild = prefs.markWilds && isWild(card, wildRank);
+/** Opens the go-out hand popup. Does not insert cards into the table. */
+export function ShowWentOutCardsButton({ onShow }: { onShow: () => void }) {
   return (
-    <span
-      className={cn(
-        "inline-flex min-w-[1.85rem] items-center justify-center rounded-md border bg-white px-1 py-0.5 text-xs font-bold",
-        red ? "border-red-200 text-red-600" : "border-neutral-200 text-neutral-900",
-        markWild ? "ring-1 ring-amber-400" : "",
-      )}
+    <div
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
     >
-      {rankLabel(card.rank)}
-      {SUIT_GLYPH[card.suit]}
-    </span>
-  );
-}
-
-/** Optional look at the hand someone went out with. Closed until this viewer opens it. */
-export function WentOutHandReveal({
-  name,
-  melds,
-  wildRank,
-  layout = "chips",
-  onOpenChange,
-}: {
-  name: string;
-  melds: Card[][];
-  wildRank: number;
-  layout?: "cards" | "chips";
-  onOpenChange?: (open: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
-  const cards = melds.flat();
-  if (cards.length === 0) return null;
-  const label = open ? "Hide cards" : "Show cards";
-  return (
-    <div onClick={(event) => event.stopPropagation()}>
       <Button
         size="sm"
         variant="outline"
-        aria-expanded={open}
-        aria-controls={panelId}
+        aria-haspopup="dialog"
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          const next = !open;
-          setOpen(next);
-          onOpenChange?.(next);
+          onShow();
         }}
       >
-        {label}
+        Show cards
       </Button>
-      {open ? (
-        <div id={panelId} className="mt-2" role="region" aria-label={`${name}'s cards`}>
-          <p className="mb-1 text-xs text-emerald-100/70">{name} went out with</p>
-          <div className={cn("flex flex-col gap-2", layout === "cards" ? "items-center" : "items-start")}>
-            {melds.map((meld, index) => (
-              <div
-                key={`${meld[0]?.id ?? "meld"}-${index}`}
-                className={cn("flex flex-wrap gap-1", layout === "cards" ? "justify-center" : "")}
-              >
-                {meld.map((card) =>
-                  layout === "cards" ? (
-                    <PlayingCard key={card.id} card={card} wildRank={wildRank} size="sm" />
-                  ) : (
-                    <CardChip key={card.id} card={card} wildRank={wildRank} />
-                  ),
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </div>
+  );
+}
+
+/** Popup of the hand someone went out with. Sits over the table and does not reflow it. */
+export function WentOutCardsModal({
+  name,
+  melds,
+  wildRank,
+  onClose,
+}: {
+  name: string;
+  melds: Card[][];
+  wildRank: number;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="presentation">
+      <button
+        type="button"
+        className="absolute inset-0 z-0 bg-black/70 backdrop-blur-[2px]"
+        aria-label="Close cards"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="went-out-cards-title"
+        className="relative z-10 max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-amber-200/40 bg-[#10261c] px-5 py-6 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+      >
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-200/80">
+          Went out
+        </p>
+        <p id="went-out-cards-title" className="font-display mt-2 text-2xl font-extrabold text-amber-100 sm:text-3xl">
+          {name}&apos;s cards
+        </p>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          {melds.map((meld, index) => (
+            <div key={`${meld[0]?.id ?? "meld"}-${index}`} className="flex flex-wrap justify-center gap-1">
+              {meld.map((card) => (
+                <PlayingCard key={card.id} card={card} wildRank={wildRank} size="sm" />
+              ))}
+            </div>
+          ))}
+        </div>
+        <Button className="mt-5" variant="outline" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+    </div>,
+    document.body,
   );
 }
