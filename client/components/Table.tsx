@@ -8,10 +8,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useA11y } from "../lib/A11yContext";
 import { announceFeel, shouldAnnounceRound } from "../lib/announce";
 import { playTurnChime, shouldPlayTurnSound } from "../lib/turnSound";
-import { WENT_OUT_FLASH_MS, wentOutFlashKey } from "../lib/wentOutFlash";
+import { wentOutFlashKey } from "../lib/wentOutFlash";
 import { shouldClearHandSelection } from "../lib/handSelect";
 import { handOrderKey } from "../lib/handOrder";
 import { Hand } from "./Hand";
+import { DiscardBar } from "./DiscardBar";
 import { CardBack, DiscardGhost, PlayingCard } from "./PlayingCard";
 import { AccessibilityPanel } from "./AccessibilityPanel";
 import { DonateLink } from "./DonateLink";
@@ -29,7 +30,7 @@ import { LearningToggle } from "./LearningToggle";
 import { useLearning } from "../lib/LearningContext";
 import { CoachOverlay } from "./CoachOverlay";
 import { LeaveRoomButton } from "./LeaveRoomButton";
-import { ShowWentOutCardsButton, WentOutCardsPanel } from "./WentOutHand";
+import { WentOutBanner } from "./WentOutHand";
 import { Button } from "./ui/button";
 
 function remainingSeconds(turnEndsAt: number | null): number | null {
@@ -87,23 +88,15 @@ export function Table({
   const [endConfirm, setEndConfirm] = useState(false);
   const [wildToast, setWildToast] = useState(false);
   const [idleToast, setIdleToast] = useState<string | null>(null);
-  const [wentOutFlash, setWentOutFlash] = useState<string | null>(null);
-  const [wentOutCardsOpen, setWentOutCardsOpen] = useState(false);
+  const [wentOutHidden, setWentOutHidden] = useState(false);
   const { prefs } = useA11y();
   const { learning, setLearning } = useLearning();
   const lastIdleMessage = useRef<string | null>(null);
   const previousPlayerId = useRef<string | null>(null);
   const wasMyTurn = useRef<boolean | null>(null);
   const lastWentOutKey = useRef<string | null>(null);
-  const wentOutPinned = useRef(false);
   const discardRef = useRef<HTMLButtonElement>(null);
   const canGoOut = Boolean(selected && state.goOutCardIds.includes(selected));
-  const goOutAvailable = state.goOutCardIds.length > 0;
-  const goOutTooltip = canGoOut
-    ? "Discard this card — the table goes out for you. The rest of the hand is legal melds."
-    : goOutAvailable
-      ? "A marked card will go out automatically when you discard it."
-      : "Go out when one discard leaves the rest of your hand as legal melds.";
 
   function throwCard(cardId: string) {
     setSelected(null);
@@ -156,24 +149,16 @@ export function Table({
     return () => window.clearTimeout(timer);
   }, [state.phase, state.round, state.roomCode]);
 
+  const wentOutKey = wentOutFlashKey(state.roomCode, state.round, state.wentOutId);
   useEffect(() => {
-    const key = wentOutFlashKey(state.roomCode, state.round, state.wentOutId);
-    if (!key || key === lastWentOutKey.current) return;
-    lastWentOutKey.current = key;
-    const showCards = Boolean(state.wentOutMelds && state.wentOutMelds.length > 0);
-    wentOutPinned.current = showCards;
-    setWentOutFlash(state.wentOutName ?? "Someone");
-    if (showCards) return;
-    const timer = window.setTimeout(() => {
-      if (wentOutPinned.current) return;
-      setWentOutFlash(null);
-    }, WENT_OUT_FLASH_MS);
-    return () => window.clearTimeout(timer);
-  }, [state.roomCode, state.round, state.wentOutId, state.wentOutName, state.wentOutMelds]);
+    if (wentOutKey === lastWentOutKey.current) return;
+    lastWentOutKey.current = wentOutKey;
+    setWentOutHidden(false);
+  }, [wentOutKey]);
 
   useEffect(() => {
-    setWentOutCardsOpen(false);
-  }, [state.roomCode, state.round, state.wentOutId]);
+    setWentOutHidden(false);
+  }, [state.phase]);
 
   useEffect(() => {
     const standIn = isStandInToast(state.message);
@@ -207,13 +192,7 @@ export function Table({
         : "Your turn — no auto-move. Draw stock or take discard.";
     }
     if (state.yourTurn && state.turnPhase === "discard") {
-      if (!selected) {
-        return state.autoMove
-          ? "Tap a card — Discard appears above it"
-          : "No auto-move. Tap a card — Discard appears above it.";
-      }
-      if (canGoOut) return "Selected card can go out — use Discard on the card or Go out";
-      return "Card selected — tap Discard above it, or tap the card again to deselect";
+      return state.autoMove ? "Your turn — discard" : "Your turn — no auto-move. Discard when you are ready.";
     }
     if (state.currentPlayerName) {
       if (turnSeconds != null) return `${state.currentPlayerName}'s turn · ${formatTurnClock(turnSeconds)}`;
@@ -222,7 +201,27 @@ export function Table({
         : `Waiting for ${state.currentPlayerName} — no auto-move`;
     }
     return "Waiting";
-  }, [state, turnSeconds, selected, canGoOut, currentSeat?.botPlay]);
+  }, [state, turnSeconds, currentSeat?.botPlay]);
+
+  const selectedCard = state.yourHand.find((card) => card.id === selected) ?? null;
+  const canDrawStock = state.yourTurn && state.turnPhase === "draw" && state.stockCount > 0;
+  const canTakeDiscard = Boolean(state.yourTurn && state.turnPhase === "draw" && state.discardTop);
+  const showStock =
+    state.stockCount > 0 || (state.yourTurn && state.turnPhase === "draw" && state.discardCount > 1);
+  const wentOutByYou = Boolean(state.wentOutId && state.players.some((player) => player.id === state.wentOutId && player.isYou));
+  const wentOutDetail =
+    state.phase === "playing"
+      ? wentOutByYou
+        ? "You went out. Everyone else still takes one last turn."
+        : state.yourTurn && state.turnPhase === "draw"
+          ? "Last turn: you — draw, then discard."
+          : state.yourTurn && state.turnPhase === "discard"
+            ? "Last turn: you — discard."
+            : state.currentPlayerName
+              ? `Last turn: ${state.currentPlayerName}.`
+              : "Last turns are still going."
+      : "Last turns are done — final hands below. Nothing to close.";
+  const showWentOutBanner = Boolean(state.wentOutName) && !wentOutHidden;
 
   useEffect(() => {
     if (selected && state.yourTurn && state.turnPhase === "discard") {
@@ -267,8 +266,8 @@ export function Table({
                 )
               ) : null}
               <HowToPlayButton compact />
-              <div className="max-w-[13.5rem] rounded-2xl bg-black/35 px-2 py-1">
-                <LearningToggle compact checked={learning} onChange={setLearning} />
+              <div className="rounded-2xl bg-black/35 px-2 py-1">
+                <LearningToggle compact label="Learning" checked={learning} onChange={setLearning} />
               </div>
               <button
                 type="button"
@@ -345,6 +344,22 @@ export function Table({
             jokers={state.jokers}
             suddenDeath={state.wagerSuddenDeath}
             markWilds={prefs.markWilds}
+            tense={state.phase === "playing" ? "are" : "were"}
+            aside={
+              state.phase === "playing" ? (
+                <>
+                  {state.isHost && you ? (
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-100/85">
+                      Host {you.name}
+                      {you.isYou ? " · you" : ""}
+                    </span>
+                  ) : null}
+                  {onSetBotPlay && you && !you.isBot ? (
+                    <AutoPlayCheck player={you} onToggle={onSetBotPlay} />
+                  ) : null}
+                </>
+              ) : null
+            }
           />
           <CoachOverlay
             state={state}
@@ -368,16 +383,23 @@ export function Table({
           ) : null}
         </header>
 
+        {showWentOutBanner && state.wentOutName ? (
+          <WentOutBanner
+            name={state.wentOutName}
+            melds={state.wentOutMelds}
+            wildRank={state.wildRank}
+            detail={wentOutDetail}
+            onDismiss={() => setWentOutHidden(true)}
+          />
+        ) : null}
+
         {state.phase === "round_end" || state.phase === "match_end" ? (
-          <div className="score-recap-pane mt-3">
+          <div className="score-recap-pane mt-2">
             <Scoreboard
               state={state}
               onNextRound={onNextRound}
               onRematch={onRematch}
-              onShowWentOutCards={() => {
-                wentOutPinned.current = true;
-                setWentOutCardsOpen(true);
-              }}
+              onShowWentOutCards={() => setWentOutHidden(false)}
             />
           </div>
         ) : (
@@ -390,49 +412,69 @@ export function Table({
           </div>
         ) : null}
 
-        <div className="felt-table table-surface mt-2 rounded-3xl p-3 sm:p-5">
+        <div className="felt-table table-surface mt-2 rounded-3xl p-3 sm:p-4">
           <div className="table-surface-inner">
-            <div className="pile-row felt-piles flex flex-nowrap items-end justify-center gap-8 py-2">
-              <div className="text-center">
-                <p className="mb-1 text-xs uppercase tracking-wider text-emerald-100/70">Stock</p>
-                {state.stockCount > 0 || (state.yourTurn && state.turnPhase === "draw" && state.discardCount > 1) ? (
-                  <div className={state.yourTurn && state.turnPhase === "draw" ? "pile-hot" : ""}>
+            <div className="pile-row felt-piles flex flex-nowrap items-end justify-center gap-6 py-1">
+              <div className="pile-stack text-center">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-100/70">Stock</p>
+                {showStock ? (
+                  <div className={canDrawStock ? "pile-hot" : ""}>
                     <CardBack
+                      size="pile"
                       label="deck"
-                      onClick={state.yourTurn && state.turnPhase === "draw" ? onDrawStock : undefined}
+                      ariaLabel={
+                        canDrawStock
+                          ? `Draw from the stock, ${state.stockCount} left`
+                          : `Stock, ${state.stockCount} left`
+                      }
+                      onClick={canDrawStock ? onDrawStock : undefined}
                     />
                   </div>
                 ) : (
-                  <div className="flex h-[6.1rem] w-[4.35rem] items-center justify-center rounded-[0.7rem] border border-dashed border-white/30 text-xs">
+                  <div className="pile-empty flex items-center justify-center rounded-[0.7rem] border border-dashed border-white/30 text-xs">
                     {state.discardTop ? "take discard" : "empty"}
                   </div>
                 )}
-                <p className="mt-1 text-xs text-emerald-100/80">
-                  {state.stockCount > 0 ? `${state.stockCount} left` : "empty"}
+                <p className="mt-1 text-xs font-semibold text-emerald-50">
+                  {state.stockCount > 0
+                    ? canDrawStock
+                      ? `${state.stockCount} left · tap to draw`
+                      : `${state.stockCount} left`
+                    : "empty"}
                 </p>
               </div>
-              <div className="text-center">
-                <p className="mb-1 text-xs uppercase tracking-wider text-emerald-100/70">Discard</p>
+              <div className="pile-stack text-center">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-100/70">Discard</p>
                 <div className="relative inline-block">
                   {state.discardTop ? (
-                    <div className={state.yourTurn && state.turnPhase === "draw" ? "pile-hot" : ""}>
+                    <div className={canTakeDiscard ? "pile-hot discard-glow" : "discard-glow"}>
                       <PlayingCard
                         card={state.discardTop}
                         wildRank={state.wildRank}
                         largePips={prefs.largePips}
-                        onClick={
-                          state.yourTurn && state.turnPhase === "draw" ? onTakeDiscard : undefined
-                        }
+                        size="pile"
+                        onClick={canTakeDiscard ? onTakeDiscard : undefined}
                       />
+                      {canTakeDiscard ? (
+                        <button
+                          type="button"
+                          className="take-pill"
+                          onClick={onTakeDiscard}
+                        >
+                          TAKE {formatCard(state.discardTop)}
+                        </button>
+                      ) : (
+                        <span className="take-pill take-pill-quiet">TAKE {formatCard(state.discardTop)}</span>
+                      )}
                     </div>
                   ) : (
-                    <div className="flex h-[6.1rem] w-[4.35rem] items-center justify-center rounded-[0.7rem] border border-dashed border-white/30 text-xs">
+                    <div className="pile-empty flex items-center justify-center rounded-[0.7rem] border border-dashed border-white/30 text-xs">
                       empty
                     </div>
                   )}
                   {state.scoopedDiscard ? (
                     <div
-                      className="pointer-events-none absolute left-[58%] top-1 z-10 -rotate-[14deg]"
+                      className="pointer-events-none absolute left-[70%] top-1 z-10 -rotate-[14deg]"
                       role="status"
                       aria-live="polite"
                       aria-label={`Scooped ${formatCard(state.scoopedDiscard)}`}
@@ -450,7 +492,7 @@ export function Table({
         </div>
         </div>
 
-        <div className="pane-hand table-hand mt-3">
+        <div className="pane-hand table-hand">
         <p className="pane-label">Your hand</p>
             <div
               className={
@@ -459,24 +501,23 @@ export function Table({
                   : "hand-slot"
               }
             >
-              <p className="mb-2 flex flex-wrap items-center gap-2 text-sm text-emerald-50">
-                {you ? (
-                  <SeatAvatar
-                    avatar={you.avatar}
-                    seatIndex={you.seatIndex}
-                    initials={you.name}
-                    size="sm"
-                    current={state.yourTurn}
-                  />
-                ) : null}
-                {you ? <SitName name={you.name} goldGlow={playerGold(you)} /> : "You"}
-                {state.yourTurn ? " — your turn" : ""}
-                {you ? ` — ${you.cardCount} cards` : " — not seated"}
-                {you ? <BotPlayBadge player={you} /> : null}
-                {state.isHost && onSetBotPlay && you && !you.isBot ? (
-                  <AutoPlayCheck player={you} onToggle={onSetBotPlay} />
-                ) : null}
-              </p>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="flex flex-wrap items-center gap-2 text-sm text-emerald-50">
+                  {you ? (
+                    <SeatAvatar
+                      avatar={you.avatar}
+                      seatIndex={you.seatIndex}
+                      initials={you.name}
+                      size="sm"
+                      current={state.yourTurn}
+                    />
+                  ) : null}
+                  {you ? <SitName name={you.name} goldGlow={playerGold(you)} /> : "You"}
+                  {state.yourTurn ? " — your turn" : ""}
+                  {you ? ` — ${you.cardCount} cards` : " — not seated"}
+                  {you ? <BotPlayBadge player={you} /> : null}
+                </p>
+              </div>
               <Hand
                 hand={state.yourHand}
                 wildRank={state.wildRank}
@@ -491,58 +532,6 @@ export function Table({
                 acePoints={state.acePoints}
                 wildFaceValue={state.wildFaceValue}
               />
-              {state.yourTurn && state.turnPhase === "discard" ? (
-                <div className="mt-3 space-y-2">
-                  <p className="text-sm font-semibold text-amber-100">
-                    {selected
-                      ? "Discard sits on the selected card — tap it, or tap the card again to deselect."
-                      : "Tap a card to select — Discard appears above it"}
-                  </p>
-                  {/* Hidden focus target for keyboard / a11y; visible Discard is on the selected card. */}
-                  <button
-                    ref={discardRef}
-                    type="button"
-                    className="sr-only"
-                    disabled={!selected}
-                    onClick={() => {
-                      if (!selected) return;
-                      throwCard(selected);
-                    }}
-                  >
-                    Discard
-                  </button>
-                  {goOutAvailable ? (
-                    <div className="max-w-xs">
-                      <Button
-                        variant={canGoOut ? "gold" : "outline"}
-                        disabled={!canGoOut}
-                        title={goOutTooltip}
-                        onClick={() => {
-                          if (!selected) return;
-                          throwCard(selected);
-                        }}
-                      >
-                        Go out
-                      </Button>
-                      <p className="mt-1 text-[11px] leading-snug text-emerald-100/60">
-                        {goOutTooltip}
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {state.yourTurn && state.turnPhase === "draw" ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button onClick={onDrawStock}>Draw stock</Button>
-                  <Button
-                    variant="secondary"
-                    onClick={onTakeDiscard}
-                    disabled={!state.discardTop}
-                  >
-                    Take discard
-                  </Button>
-                </div>
-              ) : null}
             </div>
         </div>
           {state.phase === "playing" ? (
@@ -551,21 +540,33 @@ export function Table({
                 state={state}
                 onNextRound={onNextRound}
                 onRematch={onRematch}
-                onShowWentOutCards={() => {
-                  wentOutPinned.current = true;
-                  setWentOutCardsOpen(true);
-                }}
+                onShowWentOutCards={() => setWentOutHidden(false)}
               />
             </div>
           ) : null}
         </div>
         )}
 
-        <footer className="table-footer mt-3 pb-[env(safe-area-inset-bottom)]">
-          <div className="score-chip rounded-2xl px-3 py-2 text-sm font-semibold text-emerald-50">
-            {hint}
-          </div>
-        </footer>
+        {state.phase === "playing" ? (
+          <DiscardBar
+            card={selectedCard}
+            wildRank={state.wildRank}
+            enabled={Boolean(selectedCard && state.yourTurn && state.turnPhase === "discard")}
+            goesOut={canGoOut}
+            onDiscard={() => {
+              if (!selectedCard) return;
+              throwCard(selectedCard.id);
+            }}
+            onDeselect={() => setSelected(null)}
+            buttonRef={discardRef}
+          />
+        ) : (
+          <footer className="table-footer mt-3 pb-[env(safe-area-inset-bottom)]">
+            <div className="score-chip rounded-2xl px-3 py-2 text-sm font-semibold text-emerald-50">
+              {hint}
+            </div>
+          </footer>
+        )}
         <p className="table-rules mt-2 pb-3 text-center text-[11px] text-emerald-100/60">
           Drag to rearrange. {wildSpoken(state.wildRank)} are wild
           {state.jokers ? "; jokers always are" : ""}. Deadwood aces score {state.acePoints}.
@@ -590,41 +591,6 @@ export function Table({
         suddenDeath={state.wagerSuddenDeath}
         onDismiss={() => setWildToast(false)}
       />
-      {wentOutFlash && !(state.wentOutMelds && state.wentOutMelds.length > 0) ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="status">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
-            aria-label="Dismiss went out"
-            onClick={() => setWentOutFlash(null)}
-          />
-          <div
-            className="relative z-10 w-full max-w-lg rounded-3xl border border-amber-200/40 bg-[#10261c] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
-            onPointerDown={() => {
-              wentOutPinned.current = true;
-            }}
-          >
-            <p
-              className="font-display text-4xl font-extrabold leading-tight text-amber-100 sm:text-5xl"
-              aria-live="assertive"
-            >
-              {wentOutFlash} went out:
-            </p>
-            <p className="mt-3 text-sm text-emerald-100/70">Last turns — tap outside to continue</p>
-          </div>
-        </div>
-      ) : null}
-      {(wentOutFlash || wentOutCardsOpen) && state.wentOutMelds && state.wentOutMelds.length > 0 ? (
-        <WentOutCardsPanel
-          name={state.wentOutName ?? wentOutFlash ?? "Someone"}
-          melds={state.wentOutMelds}
-          wildRank={state.wildRank}
-          onClose={() => {
-            setWentOutFlash(null);
-            setWentOutCardsOpen(false);
-          }}
-        />
-      ) : null}
       {a11yOpen ? (
         <div
           className="fixed inset-0 z-40 flex items-end justify-center bg-black/55 p-4 backdrop-blur-[2px] sm:items-center"
@@ -643,7 +609,7 @@ export function Table({
       ) : null}
       {idleToast && state.phase === "playing" ? (
         <div
-          className="fixed bottom-20 left-1/2 z-40 w-[min(28rem,calc(100%-1.5rem))] -translate-x-1/2 rounded-2xl border border-amber-200/40 bg-[#1a1408] px-4 py-3 text-center shadow-[0_16px_40px_rgba(0,0,0,0.45)] sm:bottom-6"
+          className="fixed bottom-28 left-1/2 z-40 w-[min(28rem,calc(100%-1.5rem))] -translate-x-1/2 rounded-2xl border border-amber-200/40 bg-[#1a1408] px-4 py-3 text-center shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
           role="status"
           aria-live="polite"
         >

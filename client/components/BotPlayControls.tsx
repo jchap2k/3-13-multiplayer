@@ -34,27 +34,19 @@ export function HostStandInBar({
   players: PublicPlayer[];
   onToggle: (playerId: string, on: boolean) => void;
 }) {
-  const humans = players.filter((player) => !player.isBot);
-  if (humans.length === 0) return null;
+  const others = players.filter((player) => !player.isBot && !player.isYou);
+  if (others.length === 0) return null;
   return (
-    <div className="host-stand-in mt-3 rounded-2xl border border-amber-200/25 bg-black/25 px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100/80">
-        Host · Auto-play
+    <div className="host-stand-in mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-amber-200/20 bg-black/20 px-2 py-1">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-100/70">
+        Other seats
       </p>
-      <p className="mt-1 text-[11px] text-emerald-100/60">
-        Checked = the bot takes that seat’s turns. Unchecks when they rejoin.
-      </p>
-      <ul className="mt-2 space-y-1.5">
-        {humans.map((player) => (
-          <li key={player.id} className="flex flex-wrap items-center justify-between gap-2">
-            <span className="min-w-0 truncate text-sm font-semibold text-emerald-50">
-              {player.isYou ? `${player.name} · you` : player.name}
-              <BotPlayBadge player={player} />
-            </span>
-            <AutoPlayCheck player={player} onToggle={onToggle} />
-          </li>
-        ))}
-      </ul>
+      {others.map((player) => (
+        <span key={player.id} className="inline-flex items-center gap-1 text-xs text-emerald-50">
+          <span className="max-w-[8rem] truncate font-semibold">{player.name}</span>
+          <AutoPlayCheck player={player} onToggle={onToggle} />
+        </span>
+      ))}
     </div>
   );
 }

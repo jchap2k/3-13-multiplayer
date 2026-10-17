@@ -6,16 +6,18 @@ export function LearningToggle({
   onChange,
   locked = false,
   compact = false,
+  label = LEARNING_LABEL,
 }: {
   checked: boolean;
   onChange: (on: boolean) => void;
   locked?: boolean;
   compact?: boolean;
+  label?: string;
 }) {
   return (
-    <div className={compact ? "text-amber-50" : "text-emerald-50"}>
+    <div className={compact ? "text-amber-50" : "text-emerald-50"} title={LEARNING_LABEL}>
       <Checkbox
-        label={LEARNING_LABEL}
+        label={label}
         checked={checked}
         disabled={locked}
         onChange={(event) => onChange(event.currentTarget.checked)}

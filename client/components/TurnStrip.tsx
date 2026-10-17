@@ -1,4 +1,5 @@
 import type { PublicPlayer } from "@shared/types";
+import { botPlayBadge } from "@shared/botPlay";
 import { BotPlayBadge } from "./BotPlayControls";
 import { SeatAvatar } from "./SeatAvatar";
 import { SitName, playerGold } from "./SitName";
@@ -47,14 +48,17 @@ function Chip({
           size="sm"
           current={current}
         />
-        <div className="min-w-0">
-          <p className={cn("truncate text-sm font-semibold", current ? "text-amber-50" : "text-emerald-50")}>
+        <div className="turn-seat-heading min-w-0 flex-1">
+          <p className={cn("turn-seat-name text-sm font-semibold", current ? "text-amber-50" : "text-emerald-50")}>
             {player.isYou ? "You" : <SitName name={player.name} goldGlow={playerGold(player)} />}
-            {player.isBot ? " · bot" : ""}
-            {connectionNote(player)}
-            <BotPlayBadge player={player} />
           </p>
-          <p className="table-turn-count truncate text-[11px] text-emerald-100/60">{player.cardCount} cards</p>
+          {player.isBot || connectionNote(player) || botPlayBadge(player) ? (
+            <p className="turn-seat-meta">
+              {player.isBot ? "bot" : connectionNote(player).replace(/^ · /, "")}
+              <BotPlayBadge player={player} />
+            </p>
+          ) : null}
+          <p className="table-turn-count text-[11px] text-emerald-100/60">{player.cardCount} cards</p>
         </div>
       </div>
     </div>

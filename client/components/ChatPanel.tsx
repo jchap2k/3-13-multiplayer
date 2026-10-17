@@ -92,7 +92,7 @@ export function ChatPanel({
         type="button"
         onClick={() => (onTalk ? onTalk() : onToggle())}
         className={cn(
-          "fixed bottom-4 right-4 z-30 flex h-12 items-center gap-2 rounded-full bg-amber-400 px-4 font-bold text-[#3b2200] shadow-lg sm:bottom-5",
+          "talk-fab fixed right-4 z-30 flex h-12 items-center gap-2 rounded-full bg-amber-400 px-4 font-bold text-[#3b2200] shadow-lg",
           sheet && open && "hidden",
         )}
         aria-label={sheet ? "Open table talk" : "Focus table talk"}

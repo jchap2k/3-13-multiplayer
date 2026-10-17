@@ -4,9 +4,11 @@ import { useA11y } from "../lib/A11yContext";
 import { cn } from "../lib/utils";
 
 const sizeClass = {
+  xs: "h-[3.35rem] w-[2.4rem] text-[0.72rem]",
   sm: "h-[4.4rem] w-[3.15rem] text-[0.95rem]",
   md: "h-[6.1rem] w-[4.35rem] text-[1.25rem]",
-  hand: "h-[6.5rem] w-[4.7rem] text-[1.3rem] sm:h-[7rem] sm:w-[5rem] sm:text-[1.4rem]",
+  hand: "h-[11.2rem] w-[8rem] text-[1.45rem]",
+  pile: "h-[11.5rem] w-[8.2rem] text-[1.5rem]",
   lg: "h-[7.2rem] w-[5.1rem] text-[1.45rem]",
 };
 
@@ -20,6 +22,7 @@ export function PlayingCard({
   grab = false,
   goOut = false,
   largePips = false,
+  showWildTag = false,
   onClick,
   size = "md",
 }: {
@@ -32,6 +35,8 @@ export function PlayingCard({
   grab?: boolean;
   goOut?: boolean;
   largePips?: boolean;
+  /** Purple WILD tag for this round's wilds in the hand. */
+  showWildTag?: boolean;
   onClick?: () => void;
   size?: keyof typeof sizeClass;
 }) {
@@ -46,6 +51,7 @@ export function PlayingCard({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={selected ? true : undefined}
       className={cn(
         "card-face relative shrink-0 touch-none select-none overflow-hidden rounded-[0.7rem] border border-stone-300/90",
         sizeClass[size],
@@ -53,7 +59,7 @@ export function PlayingCard({
         !dragging && !selected && "transition-transform duration-150",
         !dragging && !selected && onClick && !grab && "hover:-translate-y-1",
         selected &&
-          "z-20 -translate-y-3 scale-[1.04] ring-4 ring-sky-200 shadow-[0_0_0_3px_#0284c7]",
+          "z-20 -translate-y-3 scale-[1.04] ring-4 ring-amber-300 shadow-[0_0_0_3px_rgba(212,160,23,0.9),0_14px_24px_rgba(0,0,0,0.35)]",
         !selected && markWild && "wild-card ring-[3px] ring-amber-400",
         !selected && goOut && "ring-[3px] ring-emerald-300",
         dropTarget && "ring-4 ring-sky-400",
@@ -92,13 +98,22 @@ export function PlayingCard({
       >
         {suit}
       </span>
-      {markWild ? (
+      {showWildTag && wild ? (
+        <span
+          className={cn(
+            "absolute rounded-full bg-violet-600 px-1.5 py-px text-[0.4em] font-extrabold tracking-wide text-white",
+            selected ? "right-1 top-1" : "bottom-1 left-1/2 -translate-x-1/2",
+          )}
+        >
+          WILD
+        </span>
+      ) : markWild ? (
         <span className="absolute right-1 top-1 rounded-full bg-amber-400 px-1 py-px text-[0.42em] font-extrabold tracking-wide text-[#3b2200]">
           WILD
         </span>
       ) : null}
       {selected ? (
-        <span className="absolute inset-x-1 bottom-0.5 rounded-sm bg-sky-600 px-1 text-center text-[0.38em] font-extrabold tracking-wide text-white">
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-sky-700 px-1.5 py-px text-[0.4em] font-extrabold tracking-wide text-white">
           SELECTED
         </span>
       ) : goOut ? (
@@ -114,16 +129,19 @@ export function CardBack({
   label,
   size = "md",
   onClick,
+  ariaLabel,
 }: {
   label?: string;
   size?: keyof typeof sizeClass;
   onClick?: () => void;
+  ariaLabel?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={!onClick}
+      aria-label={ariaLabel}
       className={cn(
         "card-back relative shrink-0 overflow-hidden rounded-[0.7rem] border-2 border-[#93c5fd]/50 text-white",
         sizeClass[size],

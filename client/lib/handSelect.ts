@@ -1,3 +1,6 @@
+/** The only discard instruction on the table. */
+export const DISCARD_HINT = "Tap a card to select it, then press Discard.";
+
 export function shouldClearHandSelection(args: {
   selected: string | null;
   yourTurn: boolean;

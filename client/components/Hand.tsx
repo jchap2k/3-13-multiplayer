@@ -13,6 +13,7 @@ import {
   sortByRank,
   sortBySuit,
 } from "../lib/handOrder";
+import { handRowColumns } from "../lib/handLayout";
 import { PlayingCard } from "./PlayingCard";
 import { Button } from "./ui/button";
 
@@ -264,26 +265,20 @@ export function Hand({
           Wilds first
         </Button>
       </div>
-      <p className="hand-hint mb-2 text-xs text-emerald-100/70">
-        {selectable
-          ? [
-              "Tap a card to select — Discard appears above it. Tap again to deselect.",
-              prefs.doubleDiscard ? "Double-tap discards, and goes out if that discard is legal." : null,
-              prefs.longDiscard ? `Hold ${LONG_PRESS_MS}ms to discard the same way.` : null,
-            ]
-              .filter(Boolean)
-              .join(" ")
-          : "Drag cards to rearrange"}
-      </p>
-      <div className="hand-cards flex flex-wrap items-end gap-2 pt-8">
+      {selectable ? null : (
+        <p className="hand-hint mb-2 text-xs text-emerald-100/70">Drag cards to rearrange</p>
+      )}
+      <div
+        className="hand-cards"
+        style={{ gridTemplateColumns: `repeat(${handRowColumns(cards.length)}, minmax(0, 1fr))` }}
+      >
         {cards.map((card) => {
           const isSelected = selected === card.id;
-          const showDiscard = Boolean(selectable && isSelected && onConfirm);
           return (
           <div
             key={card.id}
             data-hand-card={card.id}
-            className="hand-card-enter relative touch-none"
+            className="hand-card-slot hand-card-enter relative touch-none"
             onContextMenu={(event) => event.preventDefault()}
             onPointerDown={(event) => {
               if (event.button !== undefined && event.button !== 0) return;
@@ -296,34 +291,13 @@ export function Hand({
               begin(card.id, event.clientX, event.clientY);
             }}
           >
-            {showDiscard ? (
-              <button
-                type="button"
-                className="absolute -top-7 left-1/2 z-30 -translate-x-1/2 rounded-full border border-amber-200/70 bg-amber-400 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-stone-950 shadow-md"
-                aria-label="Discard selected card"
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onConfirm?.(card.id);
-                }}
-              >
-                Discard
-              </button>
-            ) : null}
             <PlayingCard
               card={card}
               wildRank={wildRank}
               selected={isSelected}
               goOut={goOutIds.includes(card.id)}
               largePips={largePips}
+              showWildTag
               size="hand"
               dragging={dragId === card.id}
               dropTarget={overId === card.id}

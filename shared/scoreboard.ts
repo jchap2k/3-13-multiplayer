@@ -1,4 +1,4 @@
-import { dealCountForRound, rankLabel, ROUND_COUNT } from "./cards.js";
+import { dealCountForRound, rankLabel, ROUND_COUNT, wildRankForRound, wildSpoken } from "./cards.js";
 import type { PublicPlayer, RevealedHand } from "./types.js";
 
 /** Pause on the scoreboard before the next deal so totals can be read. */
@@ -55,6 +55,46 @@ export function scoreRoundLabel(round: number): string {
 export function scoredRoundCount(players: { roundScores: number[] }[], currentRound: number): number {
   const posted = Math.max(0, ...players.map((player) => player.roundScores.length));
   return Math.min(ROUND_COUNT, Math.max(posted, currentRound));
+}
+
+/**
+ * Copy for the round-end dock: the next hand's wild rank, separate from the countdown.
+ * Null after the last regulation hand (the match is over; there is no next deal).
+ */
+export function nextDealBrief(currentRound: number): {
+  round: number;
+  wildRank: number;
+  wild: string;
+  cardsEach: number;
+} | null {
+  if (!Number.isInteger(currentRound) || currentRound >= ROUND_COUNT) return null;
+  const round = currentRound + 1;
+  const cardsEach = dealCountForRound(round);
+  const wildRank = wildRankForRound(round);
+  return { round, wildRank, wild: wildSpoken(wildRank), cardsEach };
+}
+
+/** 0 at the start of the auto-deal pause, 1 when the countdown hits zero. */
+export function countdownProgress(
+  secondsLeft: number | null,
+  totalSeconds = AUTO_NEXT_MS / 1000,
+): number {
+  if (secondsLeft == null) return 1;
+  const total = totalSeconds > 0 ? totalSeconds : 1;
+  return Math.min(1, Math.max(0, (total - secondsLeft) / total));
+}
+
+/**
+ * Freeze Player and Total once the per-round card gets wide:
+ * 5+ seats, or rounds 9–11 (portrait columns squeeze).
+ */
+export function roundTableCompact(playerCount: number, roundsShown: number): boolean {
+  return playerCount >= 5 || roundsShown >= 9;
+}
+
+/** In-game strip: token + total only once five or more scores share one row. */
+export function liveScoreCompact(playerCount: number): boolean {
+  return playerCount >= 5;
 }
 
 export function secondsUntil(at: number | null, now = Date.now()): number | null {

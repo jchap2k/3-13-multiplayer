@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   AUTO_NEXT_MS,
+  countdownProgress,
   lastRoundPoints,
+  liveScoreCompact,
+  nextDealBrief,
   placeLabel,
   rankStandings,
+  roundTableCompact,
   scoreRoundLabel,
   scoredRoundCount,
   secondsUntil,
@@ -34,6 +38,50 @@ describe("standings", () => {
     expect(placeLabel(2)).toBe("2nd");
     expect(placeLabel(3)).toBe("3rd");
     expect(placeLabel(11)).toBe("11th");
+  });
+
+  it("ranks a 14 between 0 and a pair of 18s as 2nd, sharing 3rd on the tie", () => {
+    const seat = (id: string, name: string, score: number) => ({
+      id,
+      name,
+      isBot: false,
+      isYou: false,
+      score,
+      roundScores: [score],
+      goldGlow: false,
+    });
+    const rows = rankStandings([
+      seat("a", "CoS", 0),
+      seat("b", "Duty Officer", 14),
+      seat("c", "Nova", 18),
+      seat("d", "Wire Editor", 18),
+      seat("e", "Piper", 20),
+      seat("f", "Nash", 23),
+    ]);
+    expect(rows.find((row) => row.name === "Duty Officer")?.place).toBe(2);
+    expect(placeLabel(2)).toBe("2nd");
+    expect(rows.map((row) => row.place)).toEqual([1, 2, 3, 3, 5, 6]);
+    expect(rows.map((row) => row.score)).toEqual([0, 14, 18, 18, 20, 23]);
+  });
+
+  it("describes the next deal apart from the countdown", () => {
+    expect(nextDealBrief(1)).toEqual({ round: 2, wildRank: 4, wild: "4s", cardsEach: 4 });
+    expect(nextDealBrief(10)).toMatchObject({ round: 11, cardsEach: 13 });
+    expect(nextDealBrief(11)).toBeNull();
+    expect(countdownProgress(12, 12)).toBe(0);
+    expect(countdownProgress(7, 12)).toBeCloseTo(5 / 12);
+    expect(countdownProgress(0, 12)).toBe(1);
+    expect(countdownProgress(null, 12)).toBe(1);
+  });
+
+  it("compacts the live strip at 5 players and freezes wide round columns", () => {
+    expect(liveScoreCompact(4)).toBe(false);
+    expect(liveScoreCompact(5)).toBe(true);
+    expect(liveScoreCompact(8)).toBe(true);
+    expect(roundTableCompact(4, 3)).toBe(false);
+    expect(roundTableCompact(6, 1)).toBe(true);
+    expect(roundTableCompact(2, 9)).toBe(true);
+    expect(roundTableCompact(8, 11)).toBe(true);
   });
 
   it("labels score columns by the wild rank for that round", () => {
