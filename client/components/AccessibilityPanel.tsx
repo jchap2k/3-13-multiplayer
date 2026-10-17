@@ -56,11 +56,11 @@ export function AccessibilityPanel({ compact = false }: { compact?: boolean }) {
       </div>
       <p className="mt-3 text-xs leading-snug text-emerald-100/55">
         A second tap on the selected card <span className="text-amber-100">deselects</span> it.
-        Discard with the Discard button, or (if on) double-tap ({DOUBLE_TAP_MS}ms) / long-press.
+        Discard with the gold Discard button on the bottom bar, or (if on) double-tap ({DOUBLE_TAP_MS}ms) / long-press.
         Any legal discard that leaves a fully melded hand{" "}
-        <span className="text-amber-100">goes out automatically</span>. Everyone sees a big “went
-        out” panel on this page, titled with their name, showing that hand. <span className="text-amber-100">Close</span>{" "}
-        dismisses it. <span className="text-amber-100">Show cards</span> on the scoreboard opens the same panel again.
+        <span className="text-amber-100">goes out automatically</span>. A gold banner names who went
+        out and shows that hand. The <span className="text-amber-100">X</span> dismisses it and play
+        stays on the table. <span className="text-amber-100">Show cards</span> brings the banner back.
       </p>
     </section>
   );

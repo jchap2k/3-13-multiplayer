@@ -10,7 +10,6 @@ import type { ClientView } from "@shared/types";
 import { AccessibilityPanel } from "./AccessibilityPanel";
 import { DiscordVoiceLink } from "./DiscordVoiceLink";
 import { AutoPlayCheck, BotPlayBadge } from "./BotPlayControls";
-import { CopyRoomLink } from "./CopyRoomLink";
 import { AvatarPicker, SeatAvatar } from "./SeatAvatar";
 import { DonateLink } from "./DonateLink";
 import { SitName, playerGold } from "./SitName";
@@ -80,6 +79,7 @@ export function Lobby({
   onForgetSitStats?: (handle: string, what: "worst" | "all" | "restoreWorst") => void;
 }) {
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState({ name: "", nonce: 0 });
   const [askName, setAskName] = useState(false);
   const { openHowTo } = useTutorial();
@@ -137,7 +137,7 @@ export function Lobby({
 
   return (
     <div className="lobby-shell min-h-dvh text-emerald-50">
-      <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6">
+      <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 pb-28">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-300">
             Three Thirteen · not Liverpool
@@ -149,10 +149,7 @@ export function Lobby({
             No accounts. Share the short code or link. Bots can fill empty seats so you can play a
             real match tonight.
           </p>
-          <div className="mt-4 flex flex-wrap items-start gap-4">
-            <DonateLink url={state.donateUrl} />
-            <DiscordVoiceLink url={state.discordVoiceUrl} />
-            <CopyRoomLink roomCode={heldInvalidCode ? "" : state.roomCode} disabled={Boolean(heldInvalidCode)} />
+          <div className="mt-4 flex flex-wrap items-start gap-3">
             <HowToPlayButton />
             <div className="space-y-1.5">
               <Button variant="gold" onClick={openStatsList}>
@@ -161,6 +158,8 @@ export function Lobby({
               </Button>
               <p className="text-xs text-emerald-100/50">Everyone’s board. Tap a name for the card.</p>
             </div>
+            <DiscordVoiceLink url={state.discordVoiceUrl} />
+            <DonateLink url={state.donateUrl} />
           </div>
         </header>
 
@@ -170,13 +169,27 @@ export function Lobby({
           <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-200/80">
             Room
           </h2>
-          <p
-            className={`font-display mt-2 text-4xl font-extrabold tracking-[0.08em] sm:text-6xl ${
-              heldInvalidCode ? "text-red-200" : "text-amber-200"
-            }`}
-          >
-            {heldInvalidCode ?? state.roomCode}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <p
+              className={`font-display text-4xl font-extrabold tracking-[0.08em] sm:text-6xl ${
+                heldInvalidCode ? "text-red-200" : "text-amber-200"
+              }`}
+            >
+              {heldInvalidCode ?? state.roomCode}
+            </p>
+            {heldInvalidCode ? null : (
+              <>
+                <Button variant="gold" onClick={() => copy("link")}>
+                  <Link2 className="h-4 w-4" />
+                  {copied === "link" ? "Link copied" : "Copy link"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => copy("code")}>
+                  <Copy className="h-3.5 w-3.5" />
+                  {copied === "code" ? "Copied" : "Copy code"}
+                </Button>
+              </>
+            )}
+          </div>
           {roomLost ? (
             <p className="mt-3 rounded-2xl border border-amber-300/40 bg-amber-950/50 px-3 py-2 text-sm text-amber-50">
               {ROOM_LOST_HINT}
@@ -191,26 +204,21 @@ export function Lobby({
               Host creates a room. Everyone else opens the link or types the code — no login.
             </p>
           )}
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-xs text-emerald-100/55">Different room?</span>
             <Input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               placeholder="KITE-7"
-              className="font-mono tracking-wider sm:max-w-[10rem]"
+              className="h-9 font-mono tracking-wider sm:max-w-[10rem]"
               aria-label="Room code"
             />
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => copy("code")} disabled={Boolean(heldInvalidCode)}>
-                <Copy className="h-4 w-4" />
-                {copied === "code" ? "Copied" : "Copy code"}
-              </Button>
-              <Button variant="secondary" onClick={onNewRoom}>
-                New code
-              </Button>
-              <Button variant="outline" onClick={onJoinCode}>
-                Join code
-              </Button>
-            </div>
+            <Button size="sm" variant="outline" onClick={onJoinCode}>
+              Join code
+            </Button>
+            <Button size="sm" variant="outline" onClick={onNewRoom}>
+              New code
+            </Button>
           </div>
           <p className="mt-2 text-xs text-emerald-100/50">
             Codes are WORD-NN — like KITE-7. PLAY-A won’t work (needs digits after the hyphen).
@@ -222,13 +230,7 @@ export function Lobby({
             </p>
           ) : (
             <>
-              <p className="mt-3 break-all font-mono text-xs text-emerald-100/50">{joinUrl}</p>
-              <div className="mt-2">
-                <Button size="sm" variant="outline" onClick={() => copy("link")}>
-                  <Link2 className="h-3.5 w-3.5" />
-                  {copied === "link" ? "Link copied" : "Copy link"}
-                </Button>
-              </div>
+              <p className="mt-3 truncate font-mono text-xs text-emerald-100/40">{joinUrl}</p>
             </>
           )}
         </section>
@@ -255,31 +257,6 @@ export function Lobby({
               maxLength={24}
               aria-label="Display name"
             />
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Button
-                variant="gold"
-                size="lg"
-                className="sm:min-w-[10rem]"
-                onClick={tryJoin}
-                disabled={Boolean(heldInvalidCode) || state.seated}
-              >
-                <UserPlus className="h-4 w-4" />
-                {state.seated ? "Joined" : "Join"}
-              </Button>
-              {state.isHost ? (
-                <Button
-                  variant="gold"
-                  size="lg"
-                  className="sm:min-w-[10rem]"
-                  onClick={onStart}
-                  disabled={!canStart}
-                >
-                  <Play className="h-4 w-4 fill-current" />
-                  Start game
-                </Button>
-              ) : null}
-              {state.seated ? <LeaveRoomButton onLeave={onLeaveRoom} /> : null}
-            </div>
             {state.isHost && shouldAutoAddSoloBot(state.players) ? (
               <p className="text-sm font-semibold text-amber-100/85">Solo? Start adds a bot.</p>
             ) : null}
@@ -361,7 +338,52 @@ export function Lobby({
             </div>
           ) : null}
 
-          <div className="mt-4 text-emerald-50">
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" onClick={onRoll} disabled={Boolean(heldInvalidCode)}>
+              <Dices className="h-4 w-4" />
+              {state.dealerName ? "Re-roll" : "Pick first dealer"}
+            </Button>
+          </div>
+          {state.dealerName ? (
+            <p className="mt-3 text-lg font-bold text-white">First dealer: {state.dealerName}</p>
+          ) : (
+            <p className="mt-3 text-sm text-emerald-100/50">Dealer is rolled at start if you skip this.</p>
+          )}
+          <p className="mt-2 text-sm text-emerald-100/65">{summary}</p>
+        </section>
+
+        <section className="lobby-card rounded-3xl p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-200/80">
+                House rules
+              </h2>
+              <p className="mt-1 text-xs text-emerald-100/50">Locked when the host starts</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setRulesOpen((open) => !open)}>
+              {rulesOpen ? "Done" : "Edit"}
+            </Button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {[
+              `Jokers: ${state.jokers ? "on" : "off"}`,
+              `Aces score ${state.acePoints}`,
+              state.wildFaceValue ? "Caught wilds = face value" : "Caught wilds = 15",
+              `Idle auto-move: ${state.autoMove ? "on" : "off"}`,
+              state.wagerRules ? `Wager: ${formatPlayMoney(state.wagerStake)}` : "Wager: off",
+            ].map((chip) => (
+              <span
+                key={chip}
+                className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-emerald-50"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-emerald-100/45">Tap Edit to expand the full rule descriptions.</p>
+          {rulesOpen ? (
+          <div className="mt-4 border-t border-white/10 pt-4">
+          <div className="text-emerald-50">
             <Checkbox
               label="House: add jokers (2 per deck) as extra permanent wilds"
               checked={state.jokers}
@@ -479,41 +501,8 @@ export function Lobby({
               </div>
             ) : null}
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="outline" onClick={onRoll} disabled={Boolean(heldInvalidCode)}>
-              <Dices className="h-4 w-4" />
-              {state.dealerName ? "Re-roll" : "Pick first dealer"}
-            </Button>
           </div>
-          {heldInvalidCode ? (
-            <p className="mt-2 text-sm text-amber-100/80">
-              Fix the room code before joining. Only the host (first to join) starts a valid table.
-            </p>
-          ) : state.seated && !state.isHost ? (
-            <p className="mt-2 text-sm text-amber-100/80">
-              Only the host (first to join) can start. Waiting on{" "}
-              {state.players.find((player) => player.id === state.hostId)?.name ?? "the host"}.
-            </p>
-          ) : !state.seated ? (
-            <p className="mt-2 text-sm text-emerald-100/55">
-              Join to claim the table. The first to join is the host and starts the game.
-            </p>
-          ) : shouldAutoAddSoloBot(state.players) ? (
-            <p className="mt-2 text-sm text-emerald-100/55">
-              You’re the only one here. Start adds one bot so you can learn the table.
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-emerald-100/55">
-              You’re the host (first to join). Start when the seats you want are filled.
-            </p>
-          )}
-          {state.dealerName ? (
-            <p className="mt-3 text-lg font-bold text-white">First dealer: {state.dealerName}</p>
-          ) : (
-            <p className="mt-3 text-sm text-emerald-100/50">Dealer is rolled at start if you skip this.</p>
-          )}
-          <p className="mt-2 text-sm text-emerald-100/65">{summary}</p>
+          ) : null}
         </section>
 
         <section id="stats" className="lobby-card scroll-mt-4 rounded-3xl p-5">
@@ -546,6 +535,44 @@ export function Lobby({
 
         <AccessibilityPanel />
       </div>
+      <footer className="lobby-dock">
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-amber-200/80">
+            Room {heldInvalidCode ?? state.roomCode}
+          </p>
+          <p className="truncate text-sm font-semibold text-emerald-50">
+            {!state.seated
+              ? "Not joined"
+              : state.isHost
+                ? `${state.players.length} seated · you're host`
+                : `${state.players.length} seated · waiting for the host`}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {!state.seated ? (
+            <Button
+              variant="gold"
+              size="lg"
+              className="min-w-[7.5rem]"
+              onClick={tryJoin}
+              disabled={Boolean(heldInvalidCode)}
+            >
+              <UserPlus className="h-4 w-4" />
+              Join
+            </Button>
+          ) : (
+            <LeaveRoomButton onLeave={onLeaveRoom} />
+          )}
+          {state.isHost ? (
+            <Button variant="gold" size="lg" className="min-w-[9rem]" onClick={onStart} disabled={!canStart}>
+              <Play className="h-4 w-4 fill-current" />
+              Start game
+            </Button>
+          ) : state.seated ? (
+            <span className="text-sm text-emerald-100/70">Waiting for host to start…</span>
+          ) : null}
+        </div>
+      </footer>
     </div>
   );
 }

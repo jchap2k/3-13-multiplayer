@@ -301,6 +301,14 @@ export function App() {
     send({ type: "setLearning", learning });
   }, [connected, learning]);
 
+  useEffect(() => {
+    if (!state?.phase) {
+      delete document.documentElement.dataset.phase;
+      return;
+    }
+    document.documentElement.dataset.phase = state.phase;
+  }, [state?.phase]);
+
   if (!state) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#071610] text-emerald-100/70">

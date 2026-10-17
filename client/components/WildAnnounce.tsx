@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { rankLabel, wildSpoken } from "@shared/cards";
 
 export function WildBanner({
@@ -7,6 +8,8 @@ export function WildBanner({
   jokers,
   suddenDeath = false,
   markWilds = false,
+  tense = "are",
+  aside = null,
 }: {
   round: number;
   wildRank: number;
@@ -14,21 +17,26 @@ export function WildBanner({
   jokers: boolean;
   suddenDeath?: boolean;
   markWilds?: boolean;
+  tense?: "are" | "were";
+  aside?: ReactNode;
 }) {
   return (
-    <div className="wild-banner mt-3 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-amber-500/25 via-amber-300/10 to-emerald-950/50 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
-      <p className="font-display text-lg font-extrabold leading-tight tracking-tight text-amber-50 sm:text-xl">
-        {suddenDeath
-          ? `Sudden death — ${wildSpoken(wildRank)} are wild`
-          : `Round ${round} of 11 — ${wildSpoken(wildRank)} are wild`}
-      </p>
-      <p className="mt-0.5 text-sm text-amber-100/80">
-        Deal {dealCount}
-        {jokers ? " · jokers stay wild too" : ""}
-        {markWilds
-          ? " · yellow ring = wild"
-          : " · Mark wilds in Accessibility to highlight them"}
-      </p>
+    <div className="wild-banner mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-amber-500/25 via-amber-300/10 to-emerald-950/50 px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+      <div className="min-w-0">
+        <p className="font-display text-lg font-extrabold leading-tight tracking-tight text-amber-50 sm:text-xl">
+          {suddenDeath
+            ? `Sudden death — ${wildSpoken(wildRank)} ${tense} wild`
+            : `Round ${round} of 11 — ${wildSpoken(wildRank)} ${tense} wild`}
+        </p>
+        <p className="wild-banner-hint mt-0.5 text-sm text-amber-100/80">
+          Deal {dealCount}
+          {jokers ? " · jokers stay wild too" : ""}
+          {markWilds
+            ? " · yellow ring = wild"
+            : " · Mark wilds in Accessibility to highlight them"}
+        </p>
+      </div>
+      {aside ? <div className="flex shrink-0 flex-wrap items-center gap-2">{aside}</div> : null}
     </div>
   );
 }
